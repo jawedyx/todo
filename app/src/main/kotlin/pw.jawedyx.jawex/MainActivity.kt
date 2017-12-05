@@ -56,8 +56,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             if(intent.hasExtra("update_out")){
-                val result = intent.getLongExtra("update_out", 0)
-                if(result > 0) Toast.makeText(applicationContext, "Изменения сохранены" + result, Toast.LENGTH_SHORT).show()
+                val result = intent.getIntExtra("update_out", 0)
+                if(result > 0) Toast.makeText(applicationContext, "Изменения сохранены", Toast.LENGTH_SHORT).show()
 
             }
         }
