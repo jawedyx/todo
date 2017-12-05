@@ -41,11 +41,24 @@ class MainActivity : AppCompatActivity() {
                         notes.get(position).color?.let { sheet.bottom_edit.setBackgroundColor(it) }
                         sheet.bottom_edit_id.text = notes.get(position).nid.toString()
                         isEdit = true
-
-
                     }
                 })
                 recycler.adapter.notifyDataSetChanged()
+            }
+
+            if(intent.hasExtra("insert_out")){
+                val result = intent.getLongExtra("insert_out",0)
+
+                if(result > 0)
+                    Toast.makeText(applicationContext, "Заметка добавлена!", Toast.LENGTH_SHORT).show()
+                else
+                    Toast.makeText(applicationContext, "Ошибка при добавлении!", Toast.LENGTH_SHORT).show()
+            }
+
+            if(intent.hasExtra("update_out")){
+                val result = intent.getLongExtra("update_out", 0)
+                if(result > 0) Toast.makeText(applicationContext, "Изменения сохранены" + result, Toast.LENGTH_SHORT).show()
+
             }
         }
     }
@@ -94,27 +107,29 @@ class MainActivity : AppCompatActivity() {
 
         fab.setOnClickListener { view ->
             if(!sheetBehaviour.state.equals(BottomSheetBehavior.STATE_HIDDEN)){
-                
+
                 var values = ContentValues()
                 if(isEdit){
 
-                    if(!choosedColor.equals(Color.LTGRAY)) values.put("color", choosedColor) //TODO check without color pick
+                    if(!choosedColor.equals(Color.LTGRAY)) values.put("color", choosedColor)
                     values.put("content", bottom_edit.text.toString())
-
-                    var result = App.getRef().writableDatabase.update("Notes", values, "id = ?", arrayOf(sheet.bottom_edit_id.text.toString()) )
-                    if(result > 0) Toast.makeText(applicationContext, "Изменения сохранены" + result, Toast.LENGTH_SHORT).show()
                     isEdit = false
+
+                    val updateIntent = Intent(applicationContext, NoteService::class.java)
+                    startService(updateIntent.putExtra("update", values).putExtra("bottom_edit_id",sheet.bottom_edit_id.text.toString()))
                 }else{
                     values.put("color", choosedColor)
                     values.put("content", bottom_edit.text.toString())
                     values.put("created_date", System.currentTimeMillis())
-                    App.getRef().writableDatabase.insert("Notes", null, values)
+
+                    val insertIntent = Intent(applicationContext, NoteService::class.java)
+                    startService(insertIntent.putExtra("insert", values))
                 }
 
                 sheetBehaviour.state = BottomSheetBehavior.STATE_HIDDEN
                 bottom_edit.text.clear()
                 bottom_edit.setBackgroundColor(resources.getColor(R.color.colorPrimary))
-                startService(fillerIntent.putExtra("fill", 0))
+                startService(fillerIntent.putExtra("fill", 0)) //Обновить данные из базы
 
             }else{
                 sheetBehaviour.state = BottomSheetBehavior.STATE_EXPANDED

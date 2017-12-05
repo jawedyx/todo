@@ -1,6 +1,7 @@
 package pw.jawedyx.jawex
 
 import android.app.IntentService
+import android.content.ContentValues
 import android.content.Intent
 import java.util.*
 
@@ -8,6 +9,10 @@ class NoteService : IntentService("NoteService") {
 
 
     override fun onHandleIntent(intent: Intent?) {
+
+        val response = Intent()
+        response.action = "RESPONSE"
+        response.addCategory(Intent.CATEGORY_DEFAULT)
 
         if(intent!!.hasExtra("fill")){
             val notes : ArrayList<Note> = ArrayList()
@@ -37,12 +42,29 @@ class NoteService : IntentService("NoteService") {
 
             Collections.reverse(notes) //В обратном порядке
 
-            val response = Intent()
-            response.action = "RESPONSE"
-            response.addCategory(Intent.CATEGORY_DEFAULT)
+
             response.putExtra("fill_out", notes)
             sendBroadcast(response)
 
+        }
+
+        if(intent.hasExtra("insert")){
+
+            val values = intent.getParcelableExtra<ContentValues>("insert")
+            val result = App.getRef().writableDatabase.insert("Notes", null, values)
+
+            response.putExtra("insert_out", result)
+            sendBroadcast(response)
+        }
+
+        if(intent.hasExtra("update")){
+            val values = intent.getParcelableExtra<ContentValues>("update")
+            val id = intent.getStringExtra("bottom_edit_id")
+
+            val result = App.getRef().writableDatabase.update("Notes", values, "id = ?", arrayOf(id))
+
+            response.putExtra("update_out", result)
+            sendBroadcast(response)
         }
 
     }
