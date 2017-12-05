@@ -3,30 +3,32 @@ package pw.jawedyx.jawex
 import android.content.*
 import android.graphics.Color
 import android.os.Bundle
+import android.support.design.widget.BottomSheetBehavior
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.CardView
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.*
+import android.widget.ArrayAdapter
 import android.widget.TextView
-import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.bottom_sheet.*
 import kotlinx.android.synthetic.main.card.view.*
 import kotlinx.android.synthetic.main.content_main.*
+import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
+    private var choosedColor: Int = Color.LTGRAY
 
-     val receiver = object : BroadcastReceiver() {
+    private val receiver = object : BroadcastReceiver() {
         override fun onReceive(contxt: Context?, intent: Intent?) {
             if(intent!!.hasExtra("fill_out")){
                 val notes = intent.getSerializableExtra("fill_out")
                 recycler.adapter = RAdapter(notes as ArrayList<Note>)
                 recycler.layoutManager = LinearLayoutManager(applicationContext)
                 recycler.adapter.notifyDataSetChanged()
-                Log.wtf("jawex", "Inside object receiver")
             }
         }
     }
@@ -45,36 +47,59 @@ class MainActivity : AppCompatActivity() {
 
         recycler.adapter = RAdapter()
 
+        val sheetBehaviour = BottomSheetBehavior.from(sheet)
+        sheetBehaviour.state = BottomSheetBehavior.STATE_HIDDEN
+        bottom_color_list.adapter = ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, App.getColorNamesList())
+        bottom_color_list.setOnItemClickListener({ adapterView, view, i, l ->
+            choosedColor = Color.parseColor(App.getColorValuesList().get(i))
+            bottom_edit.setBackgroundColor(choosedColor)
+        })
+
+        sheetBehaviour.setBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                if(!sheetBehaviour.state.equals(BottomSheetBehavior.STATE_HIDDEN)){
+                    fab.setImageDrawable(resources.getDrawable(R.drawable.ic_create_black_24dp))
+                }
+            }
+
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                when(newState){
+                    BottomSheetBehavior.STATE_EXPANDED, BottomSheetBehavior.STATE_COLLAPSED -> {
+                        fab.setImageDrawable(resources.getDrawable(R.drawable.ic_create_black_24dp))
+                    }
+                    else -> {
+                        fab.setImageDrawable(resources.getDrawable(R.drawable.ic_add_black_24dp))
+                    }
+                }
+            }
+        })
+
         fab.setOnClickListener { view ->
-            val values  = ContentValues()
-            values.put("color", Color.GRAY)
-            values.put("content", "Добавлено из FAB")
-            values.put("created_date", System.currentTimeMillis())
+            if(!sheetBehaviour.state.equals(BottomSheetBehavior.STATE_HIDDEN)){
+                val values  = ContentValues()
+                values.put("color", choosedColor)
+                values.put("content", bottom_edit.text.toString())
+                values.put("created_date", System.currentTimeMillis())
+                App.getRef().writableDatabase.insert("Notes", null, values)
 
-            App.getRef().writableDatabase.insert("Notes", null, values)
+                sheetBehaviour.state = BottomSheetBehavior.STATE_HIDDEN
+                bottom_edit.text.clear()
+                bottom_edit.setBackgroundColor(resources.getColor(R.color.colorPrimary))
 
-            Toast.makeText(applicationContext, "It works", Toast.LENGTH_LONG).show()
+                startService(fillerIntent.putExtra("fill", 0))
 
-
-
+            }else{
+                sheetBehaviour.state = BottomSheetBehavior.STATE_EXPANDED
+            }
         }
-
-
-
-
-
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         return when(item.itemId) {
             R.id.action_settings -> true
             else -> super.onOptionsItemSelected(item)
@@ -83,7 +108,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private class RAdapter(var data: ArrayList<Note>) : RecyclerView.Adapter<RAdapter.ViewHolder>() {
-
+        var format: SimpleDateFormat = SimpleDateFormat("dd.MM.yyyy в HH:mm", Locale.ENGLISH)
         constructor(): this(ArrayList<Note>())
 
 
@@ -98,12 +123,10 @@ class MainActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: RAdapter.ViewHolder, position: Int) {
             val note = data.get(position)
+            val dateText = format.format(note.createdTime)
             holder.textView.setText(note.text)
-            holder.dateView.setText(Date(note.createdTime).toString())
+            holder.dateView.setText(dateText)
             note.color?.let { holder.cardView.setBackgroundColor(it) }
-
-
-
 
         }
 

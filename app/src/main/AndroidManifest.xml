@@ -21,7 +21,6 @@
             </intent-filter>
         </activity>
         <service android:name=".NoteService"/>
-        <receiver android:name=".MainActivity$Receiver"/>
     </application>
 
 </manifest>

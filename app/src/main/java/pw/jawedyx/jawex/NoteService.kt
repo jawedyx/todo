@@ -36,6 +36,8 @@ class NoteService : IntentService("NoteService") {
 
             cursor.close()
 
+            Collections.reverse(notes) //В обратном порядке
+
             val response = Intent()
             response.action = "RESPONSE"
             response.addCategory(Intent.CATEGORY_DEFAULT)
