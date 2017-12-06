@@ -67,5 +67,13 @@ class NoteService : IntentService("NoteService") {
             sendBroadcast(response)
         }
 
+        if(intent.hasExtra("remove")){
+            val id = intent.getIntExtra("remove", 0)
+            val result = App.getRef().writableDatabase.delete("Notes", "id = $id", null)
+
+            response.putExtra("remove_out", result)
+            sendBroadcast(response)
+        }
+
     }
 }

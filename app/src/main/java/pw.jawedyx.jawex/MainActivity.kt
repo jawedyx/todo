@@ -4,6 +4,7 @@ import android.content.*
 import android.graphics.Color
 import android.os.Bundle
 import android.support.design.widget.BottomSheetBehavior
+import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.CardView
 import android.support.v7.widget.LinearLayoutManager
@@ -43,6 +44,17 @@ class MainActivity : AppCompatActivity() {
                         isEdit = true
                     }
                 })
+
+                (recycler.adapter as RAdapter).setLongClickListener(object: RAdapter.LongClickListener{
+                    override fun onLongClick(position: Int, view: View?) {
+                        Snackbar.make(view!!, "Удалить заметку?", Snackbar.LENGTH_SHORT).setAction("Да", View.OnClickListener {
+                            val removeIntent = Intent(applicationContext, NoteService::class.java)
+                            startService(removeIntent.putExtra("remove", notes.get(position).nid))
+                        }).show()
+                    }
+                })
+
+
                 recycler.adapter.notifyDataSetChanged()
             }
 
@@ -60,6 +72,14 @@ class MainActivity : AppCompatActivity() {
                 if(result > 0) Toast.makeText(applicationContext, "Изменения сохранены", Toast.LENGTH_SHORT).show()
 
             }
+
+            if(intent.hasExtra("remove_out")){
+                val result = intent.getIntExtra("remove_out", 0)
+                if (result > 0)  Toast.makeText(applicationContext, "Заметка удалена!", Toast.LENGTH_SHORT).show()
+                startService(Intent(applicationContext, NoteService::class.java).putExtra("fill", 0)) //Обновить данные из базы
+            }
+
+
         }
     }
 
@@ -100,6 +120,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     else -> {
                         fab.setImageDrawable(resources.getDrawable(R.drawable.ic_add_black_24dp))
+                        //TODO fix dismiss editing
                     }
                 }
             }
@@ -108,7 +129,7 @@ class MainActivity : AppCompatActivity() {
         fab.setOnClickListener { view ->
             if(!sheetBehaviour.state.equals(BottomSheetBehavior.STATE_HIDDEN)){
 
-                var values = ContentValues()
+                val values = ContentValues()
                 if(isEdit){
 
                     if(!choosedColor.equals(Color.LTGRAY)) values.put("color", choosedColor)
@@ -129,6 +150,7 @@ class MainActivity : AppCompatActivity() {
                 sheetBehaviour.state = BottomSheetBehavior.STATE_HIDDEN
                 bottom_edit.text.clear()
                 bottom_edit.setBackgroundColor(resources.getColor(R.color.colorPrimary))
+                choosedColor = Color.LTGRAY
                 startService(fillerIntent.putExtra("fill", 0)) //Обновить данные из базы
 
             }else{
@@ -154,10 +176,15 @@ class MainActivity : AppCompatActivity() {
     private  class RAdapter(var data: ArrayList<Note>) : RecyclerView.Adapter<RAdapter.ViewHolder>() {
         var format: SimpleDateFormat = SimpleDateFormat("dd.MM.yyyy в HH:mm", Locale.ENGLISH)
         private var listener: Listener? = null
+        private var lclistener: LongClickListener? = null
         constructor(): this(ArrayList<Note>())
 
         interface Listener {
             fun onClick(position: Int)
+        }
+
+        interface LongClickListener{
+            fun onLongClick(position: Int, view: View?)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
@@ -173,16 +200,31 @@ class MainActivity : AppCompatActivity() {
             val note = data.get(position)
             val dateText = format.format(note.createdTime)
 
-            holder.idView.setText(note.nid.toString())
-            holder.textView.setText(note.text)
-            holder.dateView.setText(dateText)
+            holder.idView.text = note.nid.toString()
+            holder.textView.text = note.text
+            holder.dateView.text = dateText
             note.color?.let { holder.cardView.setBackgroundColor(it) }
 
-            holder.cardView.setOnClickListener {
-                if(listener != null){
-                    listener!!.onClick(position)
+            holder.cardView.setOnClickListener(object  : View.OnClickListener{
+                override fun onClick(v: View?) {
+                    if(listener != null){
+                        listener!!.onClick(position)
+                    }
                 }
-            }
+            })
+
+            holder.cardView.setOnLongClickListener( object : View.OnLongClickListener{
+
+                override fun onLongClick(view: View?): Boolean {
+                    if(lclistener != null){
+                        lclistener!!.onLongClick(position, view)
+                    }
+                    return true
+                }
+            })
+
+
+
         }
 
         inner class ViewHolder(item: View) : RecyclerView.ViewHolder(item) {
@@ -202,6 +244,10 @@ class MainActivity : AppCompatActivity() {
 
         fun setListener(listener: Listener) {
             this.listener = listener
+        }
+
+        fun setLongClickListener(lclistener: LongClickListener){
+            this.lclistener = lclistener
         }
 
      }
