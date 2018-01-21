@@ -4,21 +4,19 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Color
 import android.os.Bundle
-import android.support.design.widget.BottomSheetBehavior
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.CardView
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.view.*
-import android.widget.ArrayAdapter
+import android.text.TextUtils
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.bottom_sheet.*
-import kotlinx.android.synthetic.main.bottom_sheet.view.*
 import kotlinx.android.synthetic.main.card.view.*
 import kotlinx.android.synthetic.main.content_main.*
 import java.text.SimpleDateFormat
@@ -26,7 +24,6 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
-    private var choosedColor: Int = Color.LTGRAY //Стандартный цвет заметки
     private var isEdit: Boolean = false
 
 
@@ -34,16 +31,12 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if(intent!!.hasExtra("fill_out")){
                 val notes = intent.getSerializableExtra("fill_out")
-                val sheetBehaviour = BottomSheetBehavior.from(sheet)
 
                 recycler.adapter = RAdapter(notes as ArrayList<Note>)
                 recycler.layoutManager = LinearLayoutManager(applicationContext)
                 (recycler.adapter as RAdapter).setListener(object : RAdapter.Listener{
                     override fun onClick(position: Int) {
-                        sheetBehaviour.state = BottomSheetBehavior.STATE_EXPANDED
-                        sheet.bottom_edit.setText(notes.get(position).text, TextView.BufferType.EDITABLE)
-                        notes.get(position).color?.let { sheet.bottom_edit.setBackgroundColor(it) }
-                        sheet.bottom_edit_id.text = notes.get(position).nid.toString()
+                        //todo Вернуть редактирование
                         isEdit = true
                     }
                 })
@@ -56,7 +49,6 @@ class MainActivity : AppCompatActivity() {
                         }).show()
                     }
                 })
-
 
                 recycler.adapter.notifyDataSetChanged()
             }
@@ -82,7 +74,6 @@ class MainActivity : AppCompatActivity() {
                 startService(Intent(applicationContext, NoteService::class.java).putExtra("fill", 0)) //Обновить данные из базы
             }
 
-
         }
     }
 
@@ -100,53 +91,13 @@ class MainActivity : AppCompatActivity() {
 
         recycler.adapter = RAdapter()
 
-
-        val sheetBehaviour = BottomSheetBehavior.from(sheet)
-        sheetBehaviour.state = BottomSheetBehavior.STATE_HIDDEN
-        bottom_color_list.adapter = ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, App.getColorNamesList())
-        bottom_color_list.setOnItemClickListener({ adapterView, view, i, l ->
-            choosedColor = Color.parseColor(App.getColorValuesList().get(i))
-            bottom_edit.setBackgroundColor(choosedColor)
-        })
-
-        sheetBehaviour.setBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-            override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                if(!sheetBehaviour.state.equals(BottomSheetBehavior.STATE_HIDDEN)){
-                    fab.setImageDrawable(resources.getDrawable(R.drawable.ic_create_black_24dp))
-                }
-            }
-
-            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                when(newState){
-                    BottomSheetBehavior.STATE_EXPANDED, BottomSheetBehavior.STATE_COLLAPSED -> {
-                        fab.setImageDrawable(resources.getDrawable(R.drawable.ic_create_black_24dp))
-                    }
-                    else -> {
-                        fab.setImageDrawable(resources.getDrawable(R.drawable.ic_add_black_24dp))
-                        //TODO fix dismiss editing
-                    }
-                }
-            }
-        })
-
         fab.setOnClickListener { view ->
             var cIntent = Intent(applicationContext, CreateNoteActivity::class.java)
             startActivity(cIntent)
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when(item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
-        }
-
-    }
 
     private  class RAdapter(var data: ArrayList<Note>) : RecyclerView.Adapter<RAdapter.ViewHolder>() {
         var format: SimpleDateFormat = SimpleDateFormat("dd.MM.yyyy в HH:mm", Locale.ENGLISH)
@@ -179,6 +130,12 @@ class MainActivity : AppCompatActivity() {
             holder.textView.text = note.text
             holder.dateView.text = dateText
             note.color?.let { holder.cardView.setBackgroundColor(it) }
+            if(!TextUtils.isEmpty(note.title)){
+                holder.title.text = note.title
+            }else{
+                holder.title.visibility = View.GONE
+            }
+
 
             holder.cardView.setOnClickListener(object  : View.OnClickListener{
                 override fun onClick(v: View?) {
@@ -198,8 +155,6 @@ class MainActivity : AppCompatActivity() {
                 }
             })
 
-
-
         }
 
         inner class ViewHolder(item: View) : RecyclerView.ViewHolder(item) {
@@ -207,6 +162,7 @@ class MainActivity : AppCompatActivity() {
             var cardView : CardView
             var dateView : TextView
             var idView : TextView
+            var title : TextView
 
 
             init {
@@ -214,6 +170,7 @@ class MainActivity : AppCompatActivity() {
                 cardView = item.card
                 dateView = item.date
                 idView = item.item_sql_id
+                title = item.card_title
             }
         }
 

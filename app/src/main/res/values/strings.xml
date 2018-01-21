@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Jawex ToDo</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_add">Add</string>
     <string name="bottom_edit_text">Write ur todo right here!</string>
     <string name="note_text">Input Your note here</string>
     <string name="note_title">Title of your note</string>

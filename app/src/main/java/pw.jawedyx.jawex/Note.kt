@@ -7,5 +7,6 @@ data class Note(
         var nid: Int,
         var color : Int? = Color.RED,
         var text: String,
-        var createdTime : Long
+        var createdTime : Long,
+        var title: String?
         ) : Serializable

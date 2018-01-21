@@ -32,9 +32,10 @@ class NoteService : IntentService("NoteService") {
                 val colorIndex = cursor.getColumnIndex("color")
                 val contentIndex = cursor.getColumnIndex("content")
                 val created_date = cursor.getColumnIndex("created_date")
+                val title = cursor.getColumnIndex("title")
 
                 do {
-                    notes.add(Note(cursor.getInt(idIndex), cursor.getInt(colorIndex), cursor.getString(contentIndex), cursor.getLong(created_date)))
+                    notes.add(Note(cursor.getInt(idIndex), cursor.getInt(colorIndex), cursor.getString(contentIndex), cursor.getLong(created_date), cursor.getString(title)))
                 }while (cursor.moveToNext())
             }
 
