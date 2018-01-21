@@ -1,6 +1,9 @@
 package pw.jawedyx.jawex
 
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Color
 import android.os.Bundle
 import android.support.design.widget.BottomSheetBehavior
@@ -127,36 +130,8 @@ class MainActivity : AppCompatActivity() {
         })
 
         fab.setOnClickListener { view ->
-            if(!sheetBehaviour.state.equals(BottomSheetBehavior.STATE_HIDDEN)){
-
-                val values = ContentValues()
-                if(isEdit){
-
-                    if(!choosedColor.equals(Color.LTGRAY)) values.put("color", choosedColor)
-                    values.put("content", bottom_edit.text.toString())
-                    isEdit = false
-
-                    val updateIntent = Intent(applicationContext, NoteService::class.java)
-                    startService(updateIntent.putExtra("update", values).putExtra("bottom_edit_id",sheet.bottom_edit_id.text.toString()))
-                }else{
-                    values.put("color", choosedColor)
-                    values.put("content", bottom_edit.text.toString())
-                    values.put("created_date", System.currentTimeMillis())
-
-                    val insertIntent = Intent(applicationContext, NoteService::class.java)
-                    startService(insertIntent.putExtra("insert", values))
-                }
-
-                sheetBehaviour.state = BottomSheetBehavior.STATE_HIDDEN
-                bottom_edit.text.clear()
-                bottom_edit.setBackgroundColor(resources.getColor(R.color.colorPrimary))
-                choosedColor = Color.LTGRAY
-                startService(fillerIntent.putExtra("fill", 0)) //Обновить данные из базы
-
-            }else{
-                sheetBehaviour.state = BottomSheetBehavior.STATE_EXPANDED
-
-            }
+            var cIntent = Intent(applicationContext, CreateNoteActivity::class.java)
+            startActivity(cIntent)
         }
     }
 
