@@ -8,12 +8,15 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.CardView
 import android.support.v7.widget.RecyclerView
 import android.view.*
+import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_create_note.*
 import kotlinx.android.synthetic.main.color_view.view.*
 import kotlinx.android.synthetic.main.content_note.*
 
-class CreateNoteActivity : AppCompatActivity() {
-    private var choosedColor: Int = Color.LTGRAY //Стандартный цвет заметки
+class NoteControllerActivity : AppCompatActivity() {
+    private var choosedColor: String = "#9E9E9E" //Стандартный цвет заметки
+    private var isEdit: Boolean = false
+    private var nid : Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,12 +25,11 @@ class CreateNoteActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowHomeEnabled(true)
 
-
         color_recycler.adapter = ColorAdapter()
         (color_recycler.adapter as ColorAdapter).setListener(object : ColorAdapter.Listener {
             override fun onClick(position: Int) {
-                choosedColor = Color.parseColor(App.getColorValuesList().get(position))
-                note_toolbar.setBackgroundColor(choosedColor)
+                choosedColor = App.getColorValuesList().get(position)
+                note_toolbar.setBackgroundColor(Color.parseColor(choosedColor))
             }
         })
 
@@ -44,6 +46,25 @@ class CreateNoteActivity : AppCompatActivity() {
                 return false
             }
         })
+
+        if(intent.hasExtra("add")){
+
+            isEdit = false
+            supportActionBar?.title = "Add a note"
+
+        }else if(intent.hasExtra("edit")){
+
+            isEdit = true
+            supportActionBar?.title = "Edit a note"
+
+            val note = intent.getSerializableExtra("edit") as Note
+            note_title.setText(note.title, TextView.BufferType.EDITABLE)
+            note_text.setText(note.text, TextView.BufferType.EDITABLE)
+            note_toolbar.setBackgroundColor(Color.parseColor(note.color))
+            nid = note.nid
+
+        }
+
 
     }
 
@@ -94,15 +115,23 @@ class CreateNoteActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when(item.itemId) {
             R.id.action_add -> {
-                var values = ContentValues()
+
+                val values = ContentValues()
                 values.put("color", choosedColor)
                 values.put("content", note_text.text.toString())
                 values.put("title", note_title.text.toString())
                 values.put("created_date", System.currentTimeMillis())
+                val intent = Intent(applicationContext, NoteService::class.java)
 
-                val insertIntent = Intent(applicationContext, NoteService::class.java)
-                startService(insertIntent.putExtra("insert", values))
+                if(!isEdit){
+                    startService(intent.putExtra("insert", values))
+                }else{
+                    if(nid != -1) intent.putExtra("nid", nid)
+                    startService(intent.putExtra("update", values))
+                }
+
                 true
+
             }
             else -> super.onOptionsItemSelected(item)
         }

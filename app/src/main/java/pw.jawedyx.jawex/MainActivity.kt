@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Color
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
@@ -24,8 +25,6 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
-    private var isEdit: Boolean = false
-
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -36,8 +35,9 @@ class MainActivity : AppCompatActivity() {
                 recycler.layoutManager = LinearLayoutManager(applicationContext)
                 (recycler.adapter as RAdapter).setListener(object : RAdapter.Listener{
                     override fun onClick(position: Int) {
-                        //todo Вернуть редактирование
-                        isEdit = true
+                        var eIntent = Intent(applicationContext, NoteControllerActivity::class.java)
+                        eIntent.putExtra("edit", notes.get(position))
+                        startActivity(eIntent)
                     }
                 })
 
@@ -60,6 +60,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(applicationContext, "Заметка добавлена!", Toast.LENGTH_SHORT).show()
                 else
                     Toast.makeText(applicationContext, "Ошибка при добавлении!", Toast.LENGTH_SHORT).show()
+
             }
 
             if(intent.hasExtra("update_out")){
@@ -92,12 +93,19 @@ class MainActivity : AppCompatActivity() {
         recycler.adapter = RAdapter()
 
         fab.setOnClickListener { view ->
-            var cIntent = Intent(applicationContext, CreateNoteActivity::class.java)
+            var cIntent = Intent(applicationContext, NoteControllerActivity::class.java)
+            cIntent.putExtra("add", 0)
             startActivity(cIntent)
         }
     }
 
+    override fun onPostResume() {
+        super.onPostResume()
 
+        val fillerIntent = Intent(applicationContext, NoteService::class.java)
+        startService(fillerIntent.putExtra("fill", 0)) //Заполнить данными главный экран
+
+    }
 
     private  class RAdapter(var data: ArrayList<Note>) : RecyclerView.Adapter<RAdapter.ViewHolder>() {
         var format: SimpleDateFormat = SimpleDateFormat("dd.MM.yyyy в HH:mm", Locale.ENGLISH)
@@ -129,7 +137,7 @@ class MainActivity : AppCompatActivity() {
             holder.idView.text = note.nid.toString()
             holder.textView.text = note.text
             holder.dateView.text = dateText
-            note.color?.let { holder.cardView.setBackgroundColor(it) }
+            note.color?.let { holder.cardView.setBackgroundColor(Color.parseColor(it)) }
             if(!TextUtils.isEmpty(note.title)){
                 holder.title.text = note.title
             }else{

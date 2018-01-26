@@ -23,7 +23,7 @@
 
         <service android:name=".NoteService" />
 
-        <activity android:name=".CreateNoteActivity"
+        <activity android:name=".NoteControllerActivity"
             android:theme="@style/AppTheme.NoActionBar"
             android:parentActivityName=".MainActivity"
             >

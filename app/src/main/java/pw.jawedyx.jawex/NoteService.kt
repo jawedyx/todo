@@ -35,7 +35,7 @@ class NoteService : IntentService("NoteService") {
                 val title = cursor.getColumnIndex("title")
 
                 do {
-                    notes.add(Note(cursor.getInt(idIndex), cursor.getInt(colorIndex), cursor.getString(contentIndex), cursor.getLong(created_date), cursor.getString(title)))
+                    notes.add(Note(cursor.getInt(idIndex), cursor.getString(colorIndex), cursor.getString(contentIndex), cursor.getLong(created_date), cursor.getString(title)))
                 }while (cursor.moveToNext())
             }
 
@@ -60,10 +60,9 @@ class NoteService : IntentService("NoteService") {
 
         if(intent.hasExtra("update")){
             val values = intent.getParcelableExtra<ContentValues>("update")
-            val id = intent.getStringExtra("bottom_edit_id")
+            val id = intent.getIntExtra("nid", -1)
 
-            val result = App.getRef().writableDatabase.update("Notes", values, "id = ?", arrayOf(id))
-
+            val result = App.getRef().writableDatabase.update("Notes", values, "id = ?", arrayOf(id.toString()))
             response.putExtra("update_out", result)
             sendBroadcast(response)
         }
